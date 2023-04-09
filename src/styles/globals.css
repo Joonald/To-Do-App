@@ -29,6 +29,17 @@ a {
   text-decoration: none;
 }
 
+.todo-list-screen {
+  display: flex;
+  column-gap: 3rem;
+}
+
+.btn {
+  padding: .5rem;
+  margin-right: .5rem;
+  background-color: blue;
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;

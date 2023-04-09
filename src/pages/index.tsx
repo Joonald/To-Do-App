@@ -2,6 +2,7 @@ import Head from 'next/head'
 import { Inter } from 'next/font/google'
 import styles from '@/styles/Home.module.css'
 import { useReducer, useState } from 'react'
+import '../styles/Home.module.css';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -13,20 +14,27 @@ type toDo = {
 type ACTIONTYPE = 
 | {type: 'ADD', payload: toDo} 
 | {type: 'DELETE', payload: toDo} 
-| {type: 'INPROGRESS', payload: toDo};
+| {type: 'INPROGRESS', payload: toDo}
+| {type: 'COMPLETED', payload: toDo};
 
 type State = {
   counter: number,
   toDoList: toDo[],
-  inProgress: toDo[]
+  inProgress: toDo[],
+  completed: toDo[]
 }
 
 const initialState: State = {
   counter: 0,
   toDoList: [],
-  inProgress: []
+  inProgress: [],
+  completed: []
 }
 
+// function that returns a new array that doesn't include the "deleted" item
+function filterTaskById(toDos: toDo[], id: number) {
+  return toDos.filter( task => task['id'] !== id)
+}
 
 function myReducer(state: State, action: ACTIONTYPE): State {
   switch (action.type) {
@@ -42,10 +50,27 @@ function myReducer(state: State, action: ACTIONTYPE): State {
       }
     };
     case 'DELETE': {
+      const deleteID = action.payload.id;
+      // checks toDoList array if current todo is in the array before deleteing if not returns unchanged array
+      const updatedToDoList = state.toDoList.some( t => t.id === deleteID )
+      ? filterTaskById(state.toDoList, deleteID!)
+      : state.toDoList;
+
+      // checks toDoList array if current todo is in the array before deleteing if not returns unchanged array
+      const updatedInProgressList = state.inProgress.some( t => t.id === deleteID)
+      ? filterTaskById(state.inProgress, deleteID!)
+      : state.inProgress;
+
+      // checks toDoList array if current todo is in the array before deleteing if not returns unchanged array
+      const updatedCompletedList = state.completed.some( t => t.id === deleteID)
+      ? filterTaskById(state.completed, deleteID!)
+      : state.completed;
+
       return {
         ...state,
-        toDoList: [...state.toDoList.filter(task => task['id'] !== action.payload.id)],
-        inProgress: [...state.inProgress.filter(task => task['id'] !== action.payload.id)],
+        toDoList: updatedToDoList,
+        inProgress: updatedInProgressList,
+        completed: updatedCompletedList
       }
     };
     case 'INPROGRESS': {
@@ -56,7 +81,18 @@ function myReducer(state: State, action: ACTIONTYPE): State {
       return {
         ...state,
         inProgress: [...state.inProgress, newToDo],
-        toDoList: [...state.toDoList.filter(task => task['id'] !== action.payload.id)]
+        toDoList: filterTaskById(state.toDoList, action.payload.id!)
+      }
+    };
+    case 'COMPLETED': {
+      const newToDo = {
+        id: action.payload.id,
+        name: action.payload.name
+      }
+      return {
+        ...state,
+        completed: [...state.completed, newToDo],
+        inProgress: filterTaskById(state.inProgress, action.payload.id!)
       }
     }
     default:
@@ -80,8 +116,10 @@ export default function Home() {
     dispatch({type: 'INPROGRESS', payload: {id: id, name: name}})
   }
 
-  console.log(state.inProgress)
-  console.log(state.toDoList)
+  function handleCompleted(id: number, name: string) {
+    dispatch({type: 'COMPLETED', payload: {id: id, name: name}})
+  }
+
   return (
     <>
       <Head>
@@ -100,57 +138,85 @@ export default function Home() {
               onChange={e => setText(e.target.value)}
               placeholder='To Do'
               />
-              <button onClick={ ()=> {handleAdd(text), setText('')}}>
+              <button className='btn' onClick={ ()=> {handleAdd(text), setText('')}}>
                 Submit
               </button>
             </section>
-          <section>
-            <h2>To Do List</h2>
-            {state.toDoList.length > 0
-            ?
-              <ul>
-              {state.toDoList.map((task: toDo)=> {
-                return (
-                  <> 
-                      <li key={task.id}>{task.name}</li>
-                      <button onClick={ () => 
-                      handleDelete(task.id!)
-                      }>
-                      Delete
-                      </button>
-                      <button onClick={ () => 
-                        handleInProgress(task.id!, task.name!)}>
-                      Move To In Progress
-                      </button>
-                  </>
-                )
-              })}
-              </ul>
-            :
-              <p>To Do List is Empty</p>
-          }
-          </section>
-          <section>
-            <h2>In Progress List</h2>
-            {state.inProgress.length > 0
-            ?
-              <ul>
-              {state.inProgress.map((task: toDo)=> {
-                return (
-                  <> 
-                      <li key={task.id}>{task.name}</li>
-                      <button onClick={ () => 
-                      handleDelete(task.id!)
-                      }>
-                      Delete
-                      </button>
-                  </>
-                )
-              })}
-              </ul>
-            :
-              <p>In Progress List is Empty</p>
-          }
+          <section className='todo-list-screen'>
+            <section>
+              <h2>To Do List</h2>
+              {state.toDoList.length > 0
+              ?
+                <ul>
+                {state.toDoList.map((task: toDo)=> {
+                  return (
+                    <> 
+                        <li key={task.id}>{task.name}</li>
+                        <button className='btn' onClick={ () => 
+                        handleDelete(task.id!)
+                        }>
+                        Delete
+                        </button>
+                        <button className='btn' onClick={ () => 
+                          handleInProgress(task.id!, task.name!)}>
+                        Move To In Progress
+                        </button>
+                    </>
+                  )
+                })}
+                </ul>
+              :
+                <p>To Do List is Empty</p>
+            }
+            </section>
+            <section>
+              <h2>In Progress List</h2>
+              {state.inProgress.length > 0
+              ?
+                <ul>
+                {state.inProgress.map((task: toDo)=> {
+                  return (
+                    <> 
+                        <li key={task.id}>{task.name}</li>
+                        <button className='btn' onClick={ () => 
+                        handleDelete(task.id!)
+                        }>
+                        Delete
+                        </button>
+                        <button className='btn' onClick={ () => 
+                          handleCompleted(task.id!, task.name!)}>
+                        Complete Task
+                        </button>
+                    </>
+                  )
+                })}
+                </ul>
+              :
+                <p>In Progress List is Empty</p>
+            }
+            </section>
+            <section>
+              <h2>Completed</h2>
+              {state.completed.length > 0
+              ?
+                <ul>
+                {state.completed.map((task: toDo)=> {
+                  return (
+                    <> 
+                        <li key={task.id}>{task.name}</li>
+                        <button className='btn' onClick={ () => 
+                        handleDelete(task.id!)
+                        }>
+                        Delete
+                        </button>
+                    </>
+                  )
+                })}
+                </ul>
+              :
+                <p>Completed List is Empty</p>
+            }
+            </section>
           </section>
         </div>
       </main>
